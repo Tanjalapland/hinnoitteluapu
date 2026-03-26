@@ -245,6 +245,7 @@
       </div>
     </div>
     <button class="btn" onclick="laskeHinta()">Laske hinta-arvio</button>
+    <button class="btn" id="tarjousBtn" onclick="openTarjous()" style="display:none;background:var(--warm);border-color:var(--warm);color:white;margin-left:10px;">📄 Luo välitystarjous</button>
 
     <div class="card" id="tulos" style="margin-top:18px">
       <div class="tulos-header">
@@ -270,6 +271,7 @@
       <div class="tallenna-rivi">
         <span class="tallenna-status" id="tallenna-status"></span>
         <button class="btn-sm btn-outline" onclick="tallennaArvio()" id="tallenna-btn">💾 Tallenna Notioniin</button>
+        <button class="btn-sm" style="background:var(--midnight);color:white;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="siirraVelitystarjoukseen()">📄 Siirrä välitystarjoukseen</button>
       </div>
     </div>
   </div>
@@ -637,6 +639,7 @@ function laskeHinta() {
 
   document.getElementById('analyysi-teksti').textContent = analyysi;
   document.getElementById('tulos').style.display = 'block';
+    document.getElementById('tarjousBtn').style.display = 'inline-block';
   document.getElementById('tulos').scrollIntoView({behavior:'smooth',block:'nearest'});
 
   const btn = document.getElementById('tallenna-btn');
@@ -647,6 +650,81 @@ function laskeHinta() {
 }
 
 // ─── TALLENNA NOTIOON ─────────────────────────────────────────────────────────
+function siirraVelitystarjoukseen() {
+  const tulos = document.getElementById('hinta-main');
+  const haarukkaEl = document.getElementById('hinta-range');
+  const eurm2El = document.getElementById('stat-eurm2');
+  const kohdeEurm2El = document.getElementById('stat-kohde-eurm2');
+  const vertailuEl = document.getElementById('stat-n');
+  const analyysiEl = document.getElementById('analyysi-teksti');
+  const trendEl = document.getElementById('trendi-badge');
+  const nostaaTeksti = document.getElementById('tekija-nosto')?.value.trim();
+  const laskeeText = document.getElementById('tekija-lasku')?.value.trim();
+  const kohteenNimi = document.getElementById('kohteen-nimi')?.value.trim();
+  const koko = document.getElementById('koko')?.value;
+  const rakvuosi = document.getElementById('rakvuosi')?.value;
+  const kuntoEl = document.getElementById('kunto');
+  const sijaintiEl = document.getElementById('sijainti');
+  const kuntoMap = {uusi:'Uusi / remontoitu',hyva:'Hyvä',tyydyttava:'Tyydyttävä',heikko:'Heikko'};
+  const sijMap = {prime:'Prime',hyva:'Hyvä',perus:'Perus',syrjainen:'Syrjäinen'};
+
+  // Kerää valitut alueet ja kohdetyypit
+  const alueet = [...document.querySelectorAll('input[name="alue"]:checked')].map(el => el.value);
+  const tyypit = [...document.querySelectorAll('input[name="kohdetyyppi"]:checked')].map(el => el.value);
+
+  const data = {
+    type: 'lapland_arvio',
+    hinta: tulos ? tulos.textContent.trim() : '',
+    haarukka: haarukkaEl ? haarukkaEl.textContent.replace('Haarukka: ','').trim() : '',
+    eurm2: eurm2El ? eurm2El.textContent.trim() : '',
+    kohde_eurm2: kohdeEurm2El ? kohdeEurm2El.textContent.trim() : '',
+    vertailu: vertailuEl ? vertailuEl.textContent.trim() : '',
+    alue: alueet.join(' / '),
+    kohdetyyppi: tyypit.join(', '),
+    koko: koko ? koko + ' m²' : '',
+    rakvuosi: rakvuosi || '',
+    kunto: kuntoEl ? (kuntoMap[kuntoEl.value] || kuntoEl.value) : '',
+    sijainti: sijaintiEl ? (sijMap[sijaintiEl.value] || sijaintiEl.value) : '',
+    trendi: trendEl ? trendEl.textContent.trim() : '',
+    analyysi: analyysiEl ? analyysiEl.textContent.trim() : '',
+    nostaa: nostaaTeksti || '',
+    laskee: laskeeText || '',
+    kohteen_nimi: kohteenNimi || '',
+    pvm: new Date().toLocaleDateString('fi-FI')
+  };
+
+  // Tallenna localStorage:en (sama domain ei toimi cross-domain)
+  try { localStorage.setItem('lapland_arvio', JSON.stringify(data)); } catch(e) {}
+
+  // Lähetä postMessage kaikille ikkunoille
+  if (window.opener) window.opener.postMessage(data, '*');
+  window.parent.postMessage(data, '*');
+
+  // Avaa välitystarjous uudessa ikkunassa ja välitä data URL-parametreina
+  const params = new URLSearchParams();
+  if (data.hinta) params.set('hinta', data.hinta);
+  if (data.haarukka) params.set('haarukka', data.haarukka);
+  if (data.eurm2) params.set('eurm2', data.eurm2);
+  if (data.mediaani) params.set('mediaani', data.mediaani);
+  if (data.vertailu) params.set('vertailu', data.vertailu);
+  if (data.alue) params.set('alue', data.alue);
+  if (data.pvm) params.set('pvm', data.pvm);
+
+  // Ilmoita käyttäjälle
+  const status = document.getElementById('tallenna-status');
+  if (status) {
+    status.textContent = '✓ Valmis siirrettäväksi';
+    status.style.color = '#2e7d32';
+    setTimeout(() => { status.textContent = ''; }, 3000);
+  }
+
+  // Kopioi URL leikepöydälle
+  const url = window.location.href.split('?')[0] + '?' + params.toString();
+  navigator.clipboard.writeText(url).catch(() => {});
+
+  alert('Tiedot kopioitu!\n\nAvaa välitystarjous (Lapland_LKV_Valitystarjous_FI.html) ja paina \"📊 Hae hinnoittelutyökalusta\" -nappia.\n\nHinta-arvio siirtyy automaattisesti.');
+}
+
 async function tallennaArvio() {
   if (!viimeisinTulos) return;
   const btn = document.getElementById('tallenna-btn');
@@ -687,6 +765,41 @@ async function lataHistoria() {
     console.error(e);
   }
 }
+
+// Avaa välitystarjous hinnoitteluavun tuloksilla
+function openTarjous() {
+  const tulos = document.getElementById('tulos');
+  if (!tulos || tulos.style.display === 'none') {
+    alert('Tee ensin hinta-arvio.');
+    return;
+  }
+  const getData = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const txt = (el.textContent || el.value || '').replace(/[^0-9]/g, '');
+    return txt ? parseInt(txt) : null;
+  };
+  const getChecked = (name) => {
+    const el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : null;
+  };
+
+  const data = {
+    price: getData('hinta-pistearvo') || getData('tulos-hinta') || getData('hinta-piste'),
+    low:   getData('hinta-low') || getData('tulos-low'),
+    high:  getData('hinta-high') || getData('tulos-high'),
+    median: getData('tulos-mediaani') || getData('mediaani-val'),
+    count:  (() => { const el = document.getElementById('tulos-lkm') || document.getElementById('vertailu-count'); return el ? el.textContent.replace(/[^0-9]/g,'') : null; })(),
+    area:   getChecked('alue') || '',
+    type:   (() => { const el = document.getElementById('kohdetyyppi'); return el ? el.value : ''; })(),
+  };
+
+  try { sessionStorage.setItem('laplandlkv_arvio', JSON.stringify(data)); } catch(e) {}
+
+  const lang = confirm('Avaa tarjous englanniksi?\n\nOK = Englanti\nPeruuta = Suomi');
+  window.open(lang ? 'valitystarjous_en.html' : 'valitystarjous_fi.html', '_blank');
+}
+
 
 function suodataHistoria() {
   const alueF = document.getElementById('historia-alue-filter').value;
