@@ -714,8 +714,21 @@ function siirraVelitystarjoukseen() {
   // Tallenna localStorage:iin
   try { localStorage.setItem('lapland_arvio', JSON.stringify(data)); } catch(e) {}
 
-  // Avaa välitystarjous uuteen välilehteen automaattisesti
-  const tarjousUrl = 'https://tanjalapland.github.io/valitystarjous/valitystarjous_fi.html';
+  // Lisää osoite URL-parametreihin — ainoa tapa siirtää cross-domain
+  if (data.osoite) params.set('osoite', data.osoite);
+  if (data.koko) params.set('koko', data.koko);
+  if (data.kunto) params.set('kunto', data.kunto);
+  if (data.sijainti) params.set('sijainti', data.sijainti);
+  if (data.kohde_eurm2) params.set('kohde_eurm2', data.kohde_eurm2);
+  if (data.trendi) params.set('trendi', data.trendi);
+  if (data.analyysi) params.set('analyysi', data.analyysi);
+  if (data.nostaa) params.set('nostaa', data.nostaa);
+  if (data.laskee) params.set('laskee', data.laskee);
+  if (data.kohdetyyppi) params.set('kohdetyyppi', data.kohdetyyppi);
+  if (data.rakvuosi) params.set('rakvuosi', data.rakvuosi);
+
+  // Avaa välitystarjous URL-parametreilla — toimii cross-domain
+  const tarjousUrl = 'https://tanjalapland.github.io/valitystarjous/valitystarjous_fi.html?' + params.toString();
   window.open(tarjousUrl, '_blank');
 
   // Ilmoita status
