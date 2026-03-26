@@ -6,25 +6,31 @@
 <title>Lapland LKV — Hinnoitteluapu</title>
 <style>
   :root {
-    --snow: #F4F5F7; --mist: #D9DDE6; --arctic: #A9B7D4;
-    --charcoal: #222222; --midnight: #3E547F;
+    --snow: #F4F5F7;
+    --mist: #D9DDE6;
+    --arctic: #A9B7D4;
+    --dusty: #E7B4B0;
+    --warm: #D99C96;
+    --charcoal: #222222;
+    --midnight: #3E547F;
+    --midnight-dark: #2d3f5e;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', system-ui, sans-serif; background: var(--snow); color: var(--charcoal); min-height: 100vh; padding: 32px 16px 60px; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #ffffff; color: var(--charcoal); min-height: 100vh; padding: 32px 16px 60px; }
   .container { max-width: 860px; margin: 0 auto; }
 
   .tabs { display: flex; gap: 4px; margin-bottom: 28px; }
   .tab { padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--mist); color: #666; background: white; transition: all 0.15s; }
-  .tab.active { background: var(--midnight); color: white; border-color: var(--midnight); }
+  .tab.active { background: linear-gradient(135deg, #3E547F 0%, #2d3f5e 100%); color: white; border-color: var(--midnight); box-shadow: 0 2px 6px rgba(62,84,127,0.3); }
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
   header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--mist); }
-  .logo-mark { width: 42px; height: 42px; border-radius: 8px; background: var(--midnight); display: flex; align-items: center; justify-content: center; color: white; font-size: 17px; font-weight: 600; flex-shrink: 0; }
+  .logo-mark { display: none; }
   header h1 { font-size: 17px; font-weight: 600; color: var(--midnight); }
   header p { font-size: 12px; color: #888; margin-top: 2px; }
 
-  .card { background: white; border-radius: 12px; padding: 26px 28px; margin-bottom: 18px; border: 1px solid var(--mist); }
+  .card { background: #ffffff; border-radius: 12px; padding: 26px 28px; margin-bottom: 18px; border: 1px solid var(--mist); box-shadow: 0 1px 4px rgba(62,84,127,0.07); }
   .card h2 { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--midnight); margin-bottom: 18px; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
@@ -50,7 +56,7 @@
 
   #tulos { display: none; }
   .tulos-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-  .hinta-haarukka { background: var(--midnight); color: white; border-radius: 10px; padding: 18px 22px; margin-bottom: 18px; }
+  .hinta-haarukka { background: linear-gradient(135deg, var(--midnight) 0%, var(--midnight-dark) 100%); color: white; border-radius: 10px; padding: 18px 22px; margin-bottom: 18px; box-shadow: 0 4px 12px rgba(62,84,127,0.25); }
   .hinta-haarukka .label { color: rgba(255,255,255,0.65); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 6px; }
   .hinta-main { font-size: 30px; font-weight: 700; letter-spacing: -0.5px; }
   .hinta-range { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 4px; }
@@ -132,11 +138,14 @@
 <body>
 <div class="container">
 
-  <header>
-    <div class="logo-mark">L</div>
+  <header style="background:#ffffff;border-bottom:2px solid var(--midnight);padding:16px 24px;display:flex;align-items:center;gap:18px;">
+    <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/Pgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIHZpZXdCb3g9IjAgMCAzMDAgMjAwIj4KICA8ZGVmcz4KICAgIDwhLS0gVFVNTUVOTkVUVFUgTElVS1VWw4RSSSBWQUFMRUFMTEUgUE9ISkFMTEUgLS0+CiAgICA8IS0tIFbDpHJpdCBvdmF0IGhpZW1hbiBzeXZlbXBpw6QgcGFyZW1tYW4ga29udHJhc3RpbiB0YWthYW1pc2Vrc2kgLS0+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InNvdXJjZUdyYWRpZW50RGFya2VyIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM4ZmExYjk7c3RvcC1vcGFjaXR5OjEiLz4gPCEtLSBTeXZlbXBpIHNpbmloYXJtYWEgLS0+CiAgICAgIDxzdG9wIG9mZnNldD0iNDUlIiBzdHlsZT0ic3RvcC1jb2xvcjojZDRhZWI4O3N0b3Atb3BhY2l0eToxIi8+IDwhLS0gU3l2ZW1waSB2YW5oYSByb29zYSAtLT4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojY2M4YTdmO3N0b3Atb3BhY2l0eToxIi8+IDwhLS0gU3l2ZW1waSB0ZXJyYWtvdHRhL3BlcnNpa2thIC0tPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CgogIDwhLS0gS0VTS0lURVRUWSBTSVPDhExUw5YgLS0+CiAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTUwLCA4MCkiPgogICAgICA8IS0tIElLT05JIChIZWhrdXUgdHVtbWVubmV0dXNzYSBsaXVrdXbDpHJpc3PDpCkgLS0+CiAgICAgIDxnIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNzb3VyY2VHcmFkaWVudERhcmtlcikiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICAgICAgICA8cGF0aCBkPSJNLTU1LDIwIEMtNDUsLTQwIDAsLTc1IDU1LDIwIi8+CiAgICAgICAgPHBhdGggZD0iTS0yMCwyMCBDLTE1LDAgMCwtMTUgMjAsMjAiLz4KICAgICAgICA8Y2lyY2xlIGN4PSIwIiBjeT0iMTAiIHI9IjQiIGZpbGw9InVybCgjc291cmNlR3JhZGllbnREYXJrZXIpIiBzdHJva2U9Im5vbmUiLz4KICAgICAgPC9nPgoKICAgICAgPCEtLSBURUtTVEkgLS0+CiAgICAgIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAsIDY1KSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+CiAgICAgICAgPCEtLSBQw6TDpHRla3N0aTogVHVtbWFuaGFybWFhICgjMmMyYzJjKSAtLT4KICAgICAgICA8dGV4dCB4PSIwIiB5PSIwIiBmaWxsPSIjMmMyYzJjIiBmb250LWZhbWlseT0iQXJpYWwsIEhlbHZldGljYSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIzMiIgZm9udC13ZWlnaHQ9IjcwMCIgbGV0dGVyLXNwYWNpbmc9IjMiPkxBUExBTkQ8L3RleHQ+CiAgICAgICAgPCEtLSBBbGFuaW1pOiBUdW1tZW5uZXR0dSBwZXJzaWtrYSAtLT4KICAgICAgICA8dGV4dCB4PSIwIiB5PSIyOCIgZmlsbD0iI2NjOGE3ZiIgZm9udC1mYW1pbHk9IkFyaWFsLCBIZWx2ZXRpY2EsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTUiIGZvbnQtd2VpZ2h0PSI2MDAiIGxldHRlci1zcGFjaW5nPSI1Ij5MS1Y8L3RleHQ+CiAgICAgIDwvZz4KICA8L2c+Cjwvc3ZnPg=="
+         alt="Lapland LKV" style="height:52px;width:auto;object-fit:contain;flex-shrink:0;"
+         >
+    <div id="logo-fallback" style="display:none;width:44px;height:44px;border-radius:8px;background:var(--midnight);align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;flex-shrink:0">L</div>
     <div>
-      <h1>Lapland LKV — Hinnoitteluapu</h1>
-      <p>Sisäinen työkalu välittäjille · 2 186 kohdetta 2023–2026</p>
+      <h1 style="color:var(--midnight);font-size:18px;font-weight:700;margin:0;letter-spacing:-0.3px">Hinnoitteluapu</h1>
+      <p style="color:#888;font-size:12px;margin:2px 0 0">Sisäinen työkalu välittäjille · 2 186 kohdetta 2023–2026</p>
     </div>
   </header>
 
@@ -319,10 +328,22 @@
     </div>
   </div>
 
-  <p style="font-size:11px;color:#bbb;text-align:center;margin-top:28px;line-height:1.6">
-    Hinta-arvio perustuu Lapland LKV:n markkinaanalyysidataan (Q1 2023 – Q1 2026).<br>
-    Ei korvaa välittäjän ammatillista arviota kohdekäynnillä. Tulos on sisäiseen käyttöön.
-  </p>
+  <div style="margin-top:40px;border-top:1px solid var(--mist);padding-top:20px">
+    <p style="font-size:11px;color:#888;text-align:center;line-height:1.7;margin-bottom:8px">
+      Hinta-arvio perustuu Lapland LKV:n markkinaanalyysidataan (2023–2026).<br>
+      Ei korvaa välittäjän ammatillista arviota kohdekäynnillä. Tulos on sisäiseen käyttöön.
+    </p>
+    <div style="background:#fff5f5;border:1px solid #f8bbbd;border-radius:8px;padding:12px 16px;margin-top:8px">
+      <p style="font-size:11px;color:#b71c1c;text-align:center;line-height:1.8;margin:0;font-weight:600">
+        ⚠️ LUOTTAMUKSELLINEN — Lapland LKV Oy:n omaisuutta (Y-tunnus 3474730-5)
+      </p>
+      <p style="font-size:10.5px;color:#888;text-align:center;line-height:1.7;margin:4px 0 0">
+        Tämä työkalu ja sen sisältämä data on Lapland LKV Oy:n yksinomaista liikesalaisuutta.<br>
+        Luvaton käyttö, kopiointi, jakaminen tai luovuttaminen kolmansille osapuolille on ehdottomasti kielletty.<br>
+        Oikeudeton käyttö johtaa vahingonkorvausvaatimuksiin tekijänoikeuslain (404/1961) ja liikesalaisuuslain (595/2018) nojalla.
+      </p>
+    </div>
+  </div>
 </div>
 
 <script>
