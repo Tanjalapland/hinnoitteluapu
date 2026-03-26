@@ -690,6 +690,7 @@ function siirraVelitystarjoukseen() {
     nostaa: nostaaTeksti || '',
     laskee: laskeeText || '',
     kohteen_nimi: kohteenNimi || '',
+    osoite: kohteenNimi || '',
     pvm: new Date().toLocaleDateString('fi-FI')
   };
 
@@ -710,19 +711,20 @@ function siirraVelitystarjoukseen() {
   if (data.alue) params.set('alue', data.alue);
   if (data.pvm) params.set('pvm', data.pvm);
 
-  // Ilmoita käyttäjälle
+  // Tallenna localStorage:iin
+  try { localStorage.setItem('lapland_arvio', JSON.stringify(data)); } catch(e) {}
+
+  // Avaa välitystarjous uuteen välilehteen automaattisesti
+  const tarjousUrl = 'https://tanjalapland.github.io/valitystarjous/valitystarjous_fi.html';
+  window.open(tarjousUrl, '_blank');
+
+  // Ilmoita status
   const status = document.getElementById('tallenna-status');
   if (status) {
-    status.textContent = '✓ Valmis siirrettäväksi';
+    status.textContent = '✓ Siirretty välitystarjoukseen';
     status.style.color = '#2e7d32';
-    setTimeout(() => { status.textContent = ''; }, 3000);
+    setTimeout(() => { status.textContent = ''; }, 4000);
   }
-
-  // Kopioi URL leikepöydälle
-  const url = window.location.href.split('?')[0] + '?' + params.toString();
-  navigator.clipboard.writeText(url).catch(() => {});
-
-  alert('Tiedot kopioitu!\n\nAvaa välitystarjous (Lapland_LKV_Valitystarjous_FI.html) ja paina \"📊 Hae hinnoittelutyökalusta\" -nappia.\n\nHinta-arvio siirtyy automaattisesti.');
 }
 
 async function tallennaArvio() {
