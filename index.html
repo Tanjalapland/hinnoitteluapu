@@ -162,7 +162,23 @@
       <div class="grid-2" style="margin-bottom:14px">
         <div>
           <label>Kohteen nimi tai osoite <span style="color:#aaa;font-weight:400">(valinnainen)</span></label>
-          <input type="text" id="kohteen-nimi" placeholder="esim. Sammaltie 12">
+          <input type="text" id="kohteen-nimi" placeholder="esim. Hissitie 10, Levi"
+            oninput="
+              const detected = tunnistaOsaAlue(this.value, [...document.querySelectorAll('input[name=alue]:checked')].map(e=>e.value).join(' / '));
+              if (detected) {
+                document.getElementById('osa-alue').value = detected;
+                document.getElementById('osa-alue-hint').textContent = '✓ Tunnistettu: ' + detected;
+              } else {
+                document.getElementById('osa-alue-hint').textContent = '';
+              }
+            ">
+        </div>
+        <div>
+          <label>Osa-alue <span style="color:#aaa;font-weight:400">(tarkentaa vertailuja)</span></label>
+          <select id="osa-alue" onchange="document.getElementById('osa-alue-hint').textContent=''">
+            <option value="">Kaikki alueen kohteet</option>
+          </select>
+          <div id="osa-alue-hint" style="font-size:11px;color:#2e7d32;margin-top:3px;"></div>
         </div>
         <div>
           <label>Alue</label>
@@ -349,6 +365,164 @@
 </div>
 
 <script>
+// ─── OSA-ALUEET ───────────────────────────────────────────────────────────────
+const SUBAREAS = {
+  'Levi / Kittilä': [
+    {
+      nimi: 'Utsuvaara',
+      osoitteet: ['Utsunkulma','Utsunkutsu','Utsuvaara','Utsunlenkki','Kinnastie',
+                  'Utsunkaltiontie','Utsukaltiontie']
+    },
+    {
+      nimi: 'Tievankieppi',
+      osoitteet: ['Tievankieppi','Levinsalmi','Fjällen']
+    },
+    {
+      nimi: 'Hissitie (rinne)',
+      osoitteet: ['Hissitie']
+    },
+    {
+      nimi: 'Levin keskusta (Sirkka)',
+      osoitteet: ['Torikuja','Levinraitti','Leviraitti','Levin Lyhty','Postintie',
+                  'Skimbaajankuja','Ratsastajankuja','Golfväylä','Hiihtäjänkuja',
+                  'Rovatie','Keskuskuja','Kelorakka','Hankatie','Operonmukka',
+                  'Rinnekuja','Laaksotie','Laaksokuja','Hirvenpolku','Nuotinvieri',
+                  'Välirakka','Kalliorakka','Kuksatie','Tähtitie','Nulkkatie',
+                  'Jutatie','Järvirovantie','Myllyjoentie','Koutakallio',
+                  'Suvannoisentie','Kätkänrannantie','Karhupolku','Etelärakka',
+                  'Unelmarakka','Loukisensuvanto','Rahorannantie']
+    },
+    {
+      nimi: 'Sirkan laitamat',
+      osoitteet: ['Suvannoisenpolku','Petsukkarinne','Varikkokaarre',
+                  'Hossanmukka','Hossansuu','Juolukkatie','Immellompolo',
+                  'Jahtimiehentie','Nulppotie']
+    },
+  ],
+  'Äkäslompolo / Ylläs': [
+    {
+      nimi: 'Ylläs rinne',
+      // Rinteen läheiset kohteet — korkein hintataso
+      osoitteet: ['Niestatie','Mettiäisentie','Patikoijantie','Nilivaarantie',
+                  'Sivulantie','Sannanrannantie','Reittitie','Louhikkopolku',
+                  'Kirveskuja','Tunturipalonpolku']
+    },
+    {
+      nimi: 'Äkäslompolo kylä',
+      // Kylän ydinalue — perushintataso
+      osoitteet: ['Kettukoantie','Kultapiiskunkatu','Vanhanmyllyntie',
+                  'Osmankuja','Helukantie','Karilantie','Teerentie',
+                  'Grillitie','Puukkotie']
+    },
+    {
+      nimi: 'Äkäslompolo laitamat',
+      // Kauempana rinteistä — matalampi hintataso
+      osoitteet: ['Kuruntie','Kaarnikkakuja']
+    },
+  ],
+  'Ylläsjärvi (95980)': [
+    {
+      nimi: 'Ylläsjärvi rinne',
+      // Rinteen läheiset — korkein hintataso
+      osoitteet: ['Laskijantie','Patikoijantie','Vaeltajantie','Miilutie',
+                  'Palovaarankaarre','Kevätpiiponkuja']
+    },
+    {
+      nimi: 'Ylläsjärvi kylä',
+      // Kylän perusalue
+      osoitteet: ['Iso-ylläksentie','Kuusikkosaajontie','Kilinätievankuja',
+                  'Takatievantie','Kaarnikkakuja']
+    },
+  ],
+  'Rovaniemi': [
+    {
+      nimi: 'Olleronvaara',
+      // Premium uudishanke — selvästi korkein hintataso Rovaniemellä
+      osoitteet: ['Olleronvaara','Olleronvaarantie']
+    },
+    {
+      nimi: 'North Suites / Riistatie',
+      // Laadukas uudistuotanto, ydinkeskustan lähellä
+      osoitteet: ['North Suites','Riistatie','Rakkakiventie']
+    },
+    {
+      nimi: 'Laadukkaat kerrostaloalueet',
+      // Hyvätasoiset asuinalueet lähellä keskustaa
+      osoitteet: ['Lehtikatu','Lapinkatu','Koivuojankatu','Kaartokatu',
+                  'Väinämöisentie','Lapinkävijäntie','Sarkakatu']
+    },
+    {
+      nimi: 'Rovaniemen keskusta',
+      // Kaupunkikeskustan normaalihintataso
+      osoitteet: ['Maakuntakatu','Korkalonkatu','Evakkotie','Hallituskatu',
+                  'Valtakatu','Rovakatu','Pohjolankatu','Ainonkatu']
+    },
+  ],
+  'Saariselkä / Inari': [
+    {
+      nimi: 'Saariselkä — käytävä (premium)',
+      // Saariselän parhaat sijainnit, lähellä rinteitä
+      osoitteet: ['Revontulentie','Mukkavuopajantie','Petsamontie']
+    },
+    {
+      nimi: 'Saariselkä — kylä',
+      // Kylän ydinalue, perushintataso
+      osoitteet: ['Saariseläntie','Uuttuperäntie','Suopunkitie',
+                  'Haraldjärventie','Angelintie']
+    },
+    {
+      nimi: 'Ivalo / Inari taajama',
+      // Ivalon ja Inarin kuntakeskus — selvästi matalampi taso
+      osoitteet: ['Ivalontie','Metsätie','Rantatie']
+    },
+  ],
+  'Sodankylä': [
+    {
+      nimi: 'Sodankylä — paremmat alueet',
+      // Omakotitalot ja hyvätasoiset kohteet
+      osoitteet: ['Aarnitie','Hirvastie','Laavutie','Hopukantie',
+                  'Venemiehentie','Siilastie']
+    },
+    {
+      nimi: 'Sodankylä — taajama',
+      // Taajaman normaalihintataso
+      osoitteet: ['Kasarmintie','Ratsutie','Kaltiontie','Koparatie',
+                  'Vuonimatie']
+    },
+    {
+      nimi: 'Sodankylä — matalampi taso',
+      // Kauempana tai vanhempaa kantaa
+      osoitteet: ['Lapintie','Ranniotie']
+    },
+  ],
+};
+
+function tunnistaOsaAlue(osoite, alue) {
+  if (!osoite || !alue) return null;
+  // Kokeile ensin täsmällinen avain, sitten ilman " / ..." -loppua
+  const sas = SUBAREAS[alue] || SUBAREAS[alue.split(' / ')[0]] || [];
+  for (const sa of sas) {
+    if (sa.osoitteet.some(o => osoite.toLowerCase().includes(o.toLowerCase()))) {
+      return sa.nimi;
+    }
+  }
+  return null;
+}
+
+function paivitaOsaAlueValikko(alue) {
+  const select = document.getElementById('osa-alue');
+  if (!select) return;
+  // Kokeile ensin täsmällinen avain, sitten ilman " / ..." -loppua
+  const sas = SUBAREAS[alue] || SUBAREAS[alue.split(' / ')[0]] || [];
+  select.innerHTML = '<option value="">Kaikki ' + alue.split(' / ')[0] + '</option>';
+  sas.forEach(sa => {
+    const opt = document.createElement('option');
+    opt.value = sa.nimi;
+    opt.textContent = sa.nimi;
+    select.appendChild(opt);
+  });
+}
+
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 // Notion-avain ja tietokannan ID — tallennettu valmiiksi
 const DEFAULT_KEY = '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';
@@ -566,6 +740,9 @@ function switchTab(name) {
 
 // ─── LASKENTA ─────────────────────────────────────────────────────────────────
 function laskeHinta() {
+  // Päivitä osa-alue-valikko valitun alueen mukaan
+  const ensimmainenAlue = [...document.querySelectorAll('input[name="alue"]:checked')].map(e=>e.value)[0];
+  if (ensimmainenAlue) paivitaOsaAlueValikko(ensimmainenAlue);
   const valitutAlueet = [...document.querySelectorAll('input[name="alue"]:checked')].map(cb => cb.value);
   if (valitutAlueet.length === 0) { alert('Valitse vähintään yksi alue'); return; }
   const alue = valitutAlueet.join(' + ');
@@ -581,11 +758,18 @@ function laskeHinta() {
 
   const valitutKohdetyypit = [...document.querySelectorAll('input[name="kohdetyyppi"]:checked')].map(cb => cb.value);
   const valitutKunnot = [...document.querySelectorAll('input[name="kunto_filter"]:checked')].map(cb => cb.value);
+  const valittuOsaAlue = document.getElementById('osa-alue')?.value || '';
+  const _saLookup = SUBAREAS[valitutAlueet[0]] || SUBAREAS[(valitutAlueet[0] || '').split(' / ')[0]] || [];
+  const osaAlueOsoitteet = valittuOsaAlue
+    ? (_saLookup.find(sa => sa.nimi === valittuOsaAlue)?.osoitteet || [])
+    : [];
+
   const baseFilter = d =>
     valitutAlueet.includes(d['Alue']) &&
     d['€/m²'] > 200 && d['€/m²'] < 15000 &&
     (valitutKohdetyypit.length === 0 || valitutKohdetyypit.includes(d['Kohdetyyppi'])) &&
-    (valitutKunnot.length === 0 || valitutKunnot.includes(d['Kunto']));
+    (valitutKunnot.length === 0 || valitutKunnot.includes(d['Kunto'])) &&
+    (osaAlueOsoitteet.length === 0 || osaAlueOsoitteet.some(o => (d['Katuosoite'] || '').startsWith(o)));
   const kaytetty = DATA.filter(d => baseFilter(d) && [2025,2026].includes(d['Vuosi']));
   const kaikki_alue = DATA.filter(d => baseFilter(d));
   const pohja = kaytetty.length >= 3 ? kaytetty : kaikki_alue;
@@ -605,7 +789,26 @@ function laskeHinta() {
   const alaraja = perusHinta * 0.87;
   const ylaraja = perusHinta * 1.13;
 
-  const vertailut = DATA.filter(d => baseFilter(d) && Math.abs(d['Ala m²'] - koko) / koko <= 0.4).sort((a,b) => b['Vuosi'] - a['Vuosi']).slice(0, 6);
+  // Vertailukohteet: suodatetaan koon mukaan, painotetaan lähellä olevaa rakennusvuotta
+  const kokoSuodatettu = DATA.filter(d => baseFilter(d) && Math.abs(d['Ala m²'] - koko) / koko <= 0.4);
+  let vertailut;
+  if (rakvuosi && kokoSuodatettu.filter(d => d['Rak.vuosi']).length >= 4) {
+    // Pisteytä: lähellä rakennusvuotta + lähellä kokoa + tuore myynti
+    vertailut = kokoSuodatettu
+      .map(d => {
+        const ikaEro = d['Rak.vuosi'] ? Math.abs(d['Rak.vuosi'] - rakvuosi) : 20;
+        const kokoEro = Math.abs(d['Ala m²'] - koko) / koko;
+        const ikaPisteet = ikaEro <= 3 ? 3 : ikaEro <= 8 ? 2 : ikaEro <= 15 ? 1 : 0;
+        const kokoPisteet = kokoEro <= 0.15 ? 2 : kokoEro <= 0.25 ? 1 : 0;
+        const tuoreusPisteet = d['Vuosi'] >= 2025 ? 2 : d['Vuosi'] === 2024 ? 1 : 0;
+        return { ...d, _pisteet: ikaPisteet + kokoPisteet + tuoreusPisteet };
+      })
+      .sort((a, b) => b._pisteet - a._pisteet || b['Vuosi'] - a['Vuosi'])
+      .slice(0, 6);
+  } else {
+    // Ei rakennusvuotta — käytä vanhaa logiikkaa (uusimmat ensin)
+    vertailut = kokoSuodatettu.sort((a, b) => b['Vuosi'] - a['Vuosi']).slice(0, 6);
+  }
 
   const d25 = kaikki_alue.filter(d => d['Vuosi']===2025).map(d=>d['€/m²']).sort((a,b)=>a-b);
   const d26 = kaikki_alue.filter(d => d['Vuosi']===2026).map(d=>d['€/m²']).sort((a,b)=>a-b);
