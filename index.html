@@ -755,6 +755,34 @@ function avaaValitystarjous() {
   const d = viimeisinTulos;
   const kuntoMap = {uusi:'Uusi / juuri remontoitu', hyva:'Hyvä', tyydyttava:'Tyydyttävä', heikko:'Heikko / remonttitarve'};
   const sijMap = {prime:'Prime', hyva:'Hyvä', perus:'Perus', syrjainen:'Syrjäinen'};
+
+  // UUSI: ohjaa suoraan täydelliseen 5-sivuiseen tarjouspohjaan URL-parametreilla
+  const p = new URLSearchParams();
+  if (d.hinta)        p.set('hinta',       fmt(d.hinta));
+  if (d.alaraja && d.ylaraja) p.set('haarukka', fmt(d.alaraja) + ' – ' + fmt(d.ylaraja));
+  if (d.kohteenNimi)  p.set('osoite',      d.kohteenNimi);
+  if (d.alue)         p.set('alue',        d.alue);
+  if (d.koko)         p.set('koko',        d.koko + ' m²');
+  if (d.kunto)        p.set('kunto',       kuntoMap[d.kunto] || d.kunto);
+  if (d.sijainti)     p.set('sijainti',    sijMap[d.sijainti] || d.sijainti);
+  if (d.kohdetyypit)  p.set('kohdetyyppi', d.kohdetyypit);
+  if (d.rakvuosi)     p.set('rakvuosi',    d.rakvuosi);
+  if (d.nostaaTeksti) p.set('nostaa',      d.nostaaTeksti);
+  if (d.laskeeText)   p.set('laskee',      d.laskeeText);
+  // Tallenna myös localStorage varmuuden vuoksi (cross-domain fallback)
+  try { localStorage.setItem('lapland_arvio', JSON.stringify({
+    hinta: fmt(d.hinta), haarukka: fmt(d.alaraja)+' – '+fmt(d.ylaraja),
+    osoite: d.kohteenNimi, alue: d.alue, koko: d.koko+' m²',
+    kunto: kuntoMap[d.kunto]||d.kunto, sijainti: sijMap[d.sijainti]||d.sijainti,
+    kohdetyyppi: d.kohdetyypit, rakvuosi: d.rakvuosi,
+    nostaa: d.nostaaTeksti, laskee: d.laskeeText
+  })); } catch(e) {}
+  window.open('valitystarjous_fi.html?' + p.toString(), '_blank');
+  return; // poistu — ei generoida minimiversiota
+
+  // (vanha minimiversio alla — ei enää käytetä)
+  const pvm = new Date().toLocaleDateString('fi-FI');
+  const html = `<!DOCTYPE html>`;
   const pvm = new Date().toLocaleDateString('fi-FI');
   const html = `<!DOCTYPE html>
 <html lang="fi">
