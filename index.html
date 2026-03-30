@@ -270,6 +270,7 @@
       <div class="tallenna-rivi">
         <span class="tallenna-status" id="tallenna-status"></span>
         <button class="btn-sm btn-outline" onclick="tallennaArvio()" id="tallenna-btn">💾 Tallenna Notioniin</button>
+        <button class="btn-sm" onclick="avaaValitystarjous()" id="tarjous-btn" style="background:var(--midnight);color:white;border:none">📄 Tee välitystarjous</button>
       </div>
     </div>
   </div>
@@ -746,6 +747,134 @@ async function testaaYhteys() {
     status.textContent = '⚠️ Yhteys epäonnistui: ' + e.message;
     status.style.color = '#c62828';
   }
+}
+
+// ─── VÄLITYSTARJOUS ───────────────────────────────────────────────────────────
+function avaaValitystarjous() {
+  if (!viimeisinTulos) { alert('Laske ensin hinta-arvio.'); return; }
+  const d = viimeisinTulos;
+  const kuntoMap = {uusi:'Uusi / juuri remontoitu', hyva:'Hyvä', tyydyttava:'Tyydyttävä', heikko:'Heikko / remonttitarve'};
+  const sijMap = {prime:'Prime', hyva:'Hyvä', perus:'Perus', syrjainen:'Syrjäinen'};
+  const pvm = new Date().toLocaleDateString('fi-FI');
+  const html = `<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<title>Välitystarjous — ${d.kohteenNimi || d.alue}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+  :root{--midnight:#3E547F;--arctic:#A9B7D4;--dusty:#E7B4B0;--snow:#F4F5F7;--mist:#D9DDE6;--charcoal:#222222;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;color:var(--charcoal);background:white;padding:0;}
+  @media print{body{padding:0;} .no-print{display:none!important;} .page{page-break-after:always;}}
+  .page{width:210mm;min-height:297mm;margin:0 auto;padding:28mm 22mm 24mm;position:relative;background:white;}
+  .page:not(:last-child){border-bottom:3px solid var(--mist);margin-bottom:8px;}
+  .logo-corner{position:fixed;bottom:18px;right:24px;opacity:0.85;}
+  .logo-corner img{height:38px;width:auto;}
+  h1{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--midnight);letter-spacing:-0.5px;margin-bottom:8px;}
+  h2{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--midnight);margin:28px 0 14px;}
+  h3{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--midnight);margin-bottom:10px;}
+  .cover-sub{font-size:14px;color:#888;margin-bottom:40px;}
+  .cover-bar{height:4px;width:60px;background:linear-gradient(90deg,var(--midnight),var(--arctic));border-radius:2px;margin-bottom:36px;}
+  .hinta-box{background:linear-gradient(135deg,var(--midnight),#2d3f5e);color:white;border-radius:12px;padding:24px 28px;margin:20px 0;}
+  .hinta-box .lbl{font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:6px;}
+  .hinta-box .main{font-size:36px;font-weight:700;letter-spacing:-1px;}
+  .hinta-box .range{font-size:13px;color:rgba(255,255,255,0.65);margin-top:4px;}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0;}
+  .info-cell{background:var(--snow);border:1px solid var(--mist);border-radius:8px;padding:13px 15px;}
+  .info-cell .lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:#888;margin-bottom:4px;}
+  .info-cell .val{font-size:14px;font-weight:600;color:var(--charcoal);}
+  .tekija-box{border-radius:8px;padding:12px 15px;font-size:13px;line-height:1.6;}
+  .tekija-box.nosto{background:#f1f8e9;border:1px solid #c8e6c9;}
+  .tekija-box.lasku{background:#fce4ec;border:1px solid #f8bbd0;}
+  .tekija-box .t-otsikko{font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;margin-bottom:6px;}
+  .tekija-box.nosto .t-otsikko{color:#2e7d32;}
+  .tekija-box.lasku .t-otsikko{color:#c62828;}
+  .palkkio-box{background:var(--snow);border:1px solid var(--mist);border-radius:10px;padding:20px 22px;margin:16px 0;}
+  .allekirjoitus{margin-top:40px;padding-top:20px;border-top:1px solid var(--mist);}
+  .sign-line{border-bottom:1px solid var(--charcoal);width:200px;margin:28px 0 6px;}
+  .sign-name{font-weight:600;font-size:14px;}
+  .sign-title{font-size:12px;color:#888;}
+  .footer-bar{position:absolute;bottom:0;left:0;right:0;height:5px;background:linear-gradient(90deg,var(--midnight),var(--arctic),var(--dusty));}
+  .print-btn{position:fixed;top:20px;right:20px;background:var(--midnight);color:white;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,0.2);}
+  .print-btn:hover{background:#2d3f5e;}
+</style>
+</head>
+<body>
+<button class="print-btn no-print" onclick="window.print()">🖨️ Tulosta / Tallenna PDF</button>
+
+<!-- SIVU 1: KANSI -->
+<div class="page">
+  <div style="margin-bottom:32px">
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--arctic);margin-bottom:16px">VÄLITYSTARJOUS</div>
+    <h1>${d.kohteenNimi || 'Kohde'}</h1>
+    <div class="cover-sub">${d.alue} &nbsp;·&nbsp; ${pvm}</div>
+    <div class="cover-bar"></div>
+  </div>
+  <div class="hinta-box">
+    <div class="lbl">Suositeltu pyyntihinta</div>
+    <div class="main">${fmt(d.hinta)}</div>
+    <div class="range">Haarukka: ${fmt(d.alaraja)} – ${fmt(d.ylaraja)}</div>
+  </div>
+  <div class="info-grid">
+    <div class="info-cell"><div class="lbl">Alue</div><div class="val">${d.alue}</div></div>
+    <div class="info-cell"><div class="lbl">Kohdetyyppi</div><div class="val">${d.kohdetyypit || '—'}</div></div>
+    <div class="info-cell"><div class="lbl">Koko</div><div class="val">${d.koko} m²</div></div>
+    <div class="info-cell"><div class="lbl">Rakennusvuosi</div><div class="val">${d.rakvuosi || '—'}</div></div>
+    <div class="info-cell"><div class="lbl">Kunto</div><div class="val">${kuntoMap[d.kunto] || d.kunto}</div></div>
+    <div class="info-cell"><div class="lbl">Sijainti</div><div class="val">${sijMap[d.sijainti] || d.sijainti}</div></div>
+  </div>
+  ${(d.nostaaTeksti || d.laskeeText) ? `
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+    ${d.nostaaTeksti ? `<div class="tekija-box nosto"><div class="t-otsikko">↑ Hintaa nostaa</div>${d.nostaaTeksti}</div>` : '<div></div>'}
+    ${d.laskeeText ? `<div class="tekija-box lasku"><div class="t-otsikko">↓ Hintaa laskee</div>${d.laskeeText}</div>` : '<div></div>'}
+  </div>` : ''}
+  <div class="footer-bar"></div>
+</div>
+
+<!-- SIVU 2: EHDOT JA ALLEKIRJOITUS -->
+<div class="page">
+  <h2>Välitystoimeksianto</h2>
+  <div class="palkkio-box">
+    <h3>Välityspalkkio</h3>
+    <p style="font-size:13px;line-height:1.7;color:#444">Välityspalkkio on <strong>3,5 % + alv 25,5 %</strong> kauppahinnasta. Palkkio veloitetaan kaupanteon yhteydessä.<br>
+    Toimeksianto on voimassa <strong>4 kuukautta</strong> allekirjoituspäivästä.<br>
+    Kohde markkinoidaan: Etuovi, Oikotie, JamesEdition, Properstar ja Linear Insider.</p>
+  </div>
+  <div class="palkkio-box" style="margin-top:12px">
+    <h3>Markkinointitoimenpiteet</h3>
+    <p style="font-size:13px;line-height:1.7;color:#444">
+      ✓ &nbsp;Ammattilaiskuvaus ja kohde-esite<br>
+      ✓ &nbsp;Ilmoitukset Etuovi.com ja Oikotie.fi<br>
+      ✓ &nbsp;Kansainvälinen näkyvyys JamesEdition &amp; Properstar<br>
+      ✓ &nbsp;Aktiivinen asiakaskontaktointi Linear CRM -järjestelmän kautta<br>
+      ✓ &nbsp;Sosiaalinen media ja kohdekohtainen markkinointi
+    </p>
+  </div>
+  <div class="allekirjoitus">
+    <h3>Allekirjoitukset</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:8px">
+      <div>
+        <div class="sign-line"></div>
+        <div class="sign-name">Tanja Sotka, LKV</div>
+        <div class="sign-title">Kiinteistönvälittäjä · Lapland LKV Oy</div>
+        <div class="sign-title" style="margin-top:2px">tanja@laplandlkv.com · +358 45 2744 184</div>
+      </div>
+      <div>
+        <div class="sign-line"></div>
+        <div class="sign-name">Toimeksiantaja</div>
+        <div class="sign-title">Nimi ja päivämäärä</div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bar"></div>
+</div>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
