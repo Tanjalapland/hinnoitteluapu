@@ -269,7 +269,7 @@
       <div class="analyysi" id="analyysi-teksti"></div>
       <div class="tallenna-rivi">
         <span class="tallenna-status" id="tallenna-status"></span>
-        <button class="btn-sm btn-outline" onclick="tallennaArvio()" id="tallenna-btn">💾 Tallenna Notioniin</button>
+        <button class="btn-sm btn-outline" onclick="tallennaArvio()" id="tallenna-btn">💾 Tallenna</button>
         <button class="btn-sm" onclick="avaaValitystarjous()" id="tarjous-btn" style="background:var(--midnight);color:white;border:none">📄 Tee välitystarjous</button>
       </div>
     </div>
@@ -282,7 +282,7 @@
         <h2 style="margin-bottom:0">Arviointihistoria</h2>
         <button class="btn-sm btn-outline" onclick="lataHistoria()">↻ Päivitä</button>
       </div>
-      <div id="notion-status-bar" class="notion-status loading"><span class="spinner"></span> Ladataan historiaa Notionista…</div>
+      <div id="notion-status-bar" class="notion-status"><span class="spinner"></span> Ladataan historiaa…</div>
       <div class="historia-filters">
         <select id="historia-alue-filter" onchange="suodataHistoria()">
           <option value="">Kaikki alueet</option>
@@ -308,15 +308,15 @@
   <!-- TAB: ASETUKSET -->
   <div id="tab-asetukset" class="tab-content">
     <div class="card">
-      <h2>Notion-yhteys</h2>
-      <p style="font-size:13px;color:#555;margin-bottom:18px;line-height:1.6">Historia tallentuu Notion-tietokantaan. Avain ja tietokannan ID on tallennettu valmiiksi — voit päivittää ne tarvittaessa.</p>
+      <h2>Tallennus</h2>
+      <p style="font-size:13px;color:#555;margin-bottom:18px;line-height:1.6">Historia tallentuu automaattisesti — ei asetuksia tarvita.</p>
       <div style="margin-bottom:14px">
         <label>Integraatioavain (Internal Integration Secret)</label>
-        <input type="password" id="notion-key" placeholder="ntn_...">
+        <div style="color:#2e7d32;font-size:13px">✓ Supabase-yhteys aktiivinen</div>
       </div>
       <div style="margin-bottom:18px">
         <label>Tietokannan ID</label>
-        <input type="text" id="notion-db" placeholder="32 merkkiä">
+        
       </div>
       <button class="btn-sm btn-outline" onclick="tallennaAsetukset()" style="width:auto">Tallenna asetukset</button>
       <button class="btn-sm btn-outline" onclick="testaaYhteys()" style="width:auto;margin-left:8px">Testaa yhteys</button>
@@ -349,34 +349,23 @@
 
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-// Notion-avain ja tietokannan ID — tallennettu valmiiksi
-const DEFAULT_KEY = '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';
-const DEFAULT_DB  = '32fd392eacab8077ba0ad5684fb603ca';
-// Netlify Function proxy - serverless, ei CORS-ongelmia
-async function notionFetch(endpoint, method, body) {
-  const { key } = getConfig();
-  const notionUrl = 'https://api.notion.com/v1' + endpoint;
-  // corsproxy.io toimii GitHub Pagesista - testattu 26.3.2026
-  const proxyUrl = 'https://corsproxy.io/?url=' + encodeURIComponent(notionUrl);
-  const res = await fetch(proxyUrl, {
-    method: method || 'POST',
+// Supabase-yhteys — historia tallentuu automaattisesti
+const SUPABASE_URL = 'https://amzuprsoiwpkutffvfqs.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtenVwcnNvaXdwa3V0ZmZ2ZnFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1Nzg3NDYsImV4cCI6MjA5MTE1NDc0Nn0.9IJZyYGGNFnswZN6oTZthWZrxPR_koBN-XDg9YiyYjw';
+
+async function supabaseRequest(path, method, body) {
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    method: method || 'GET',
     headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + key,
-      'Notion-Version': '2022-06-28'
+      'Prefer': method === 'POST' ? 'return=representation' : undefined
     },
     body: body ? JSON.stringify(body) : undefined
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
-}
-const PROXY = null;
-
-function getConfig() {
-  return {
-    key: localStorage.getItem('notion_key') || DEFAULT_KEY,
-    db:  localStorage.getItem('notion_db')  || DEFAULT_DB
-  };
 }
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
@@ -388,58 +377,9 @@ const fmtEm2 = n => Math.round(n).toLocaleString('fi-FI') + ' €/m²';
 let kaikki_arviot = [];
 let viimeisinTulos = null;
 
-// ─── NOTION API ───────────────────────────────────────────────────────────────
-function notionHeaders(key) {
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer ' + key,
-    'Notion-Version': '2022-06-28'
-  };
-}
+// ─── SUPABASE API ─── (config above)
 
-async function notionRequest(endpoint, method, body) {
-  const { key } = getConfig();
-  const url = `https://api.notion.com/v1${endpoint}`;
-  const proxyUrl = PROXY + encodeURIComponent(url);
-  const res = await fetch(proxyUrl, {
-    method,
-    headers: notionHeaders(key),
-    body: body ? JSON.stringify(body) : undefined
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-// Varmista että tietokanta on oikein rakennettu
-async function varmistaTietokanta() {
-  const { key, db } = getConfig();
-  // Lisää tarvittavat kentät
-  const props = {
-    "Kohde": { "title": {} },
-    "Alue": { "select": { "options": [
-      {"name":"Levi / Kittilä","color":"blue"},
-      {"name":"Ylläsjärvi (95980)","color":"green"},
-      {"name":"Äkäslompolo / Ylläs","color":"purple"},
-      {"name":"Rovaniemi","color":"orange"},
-      {"name":"Sodankylä","color":"pink"},
-      {"name":"Saariselkä / Inari","color":"gray"}
-    ]}},
-    "Hinta €": { "number": { "format": "euro" } },
-    "Alaraja €": { "number": { "format": "euro" } },
-    "Ylaraja €": { "number": { "format": "euro" } },
-    "Koko m2": { "number": {} },
-    "Rakennusvuosi": { "number": {} },
-    "Kunto": { "select": {} },
-    "Sijainti": { "select": {} },
-    "Kohdetyyppi": { "rich_text": {} },
-    "Hintaa nostaa": { "rich_text": {} },
-    "Hintaa laskee": { "rich_text": {} },
-    "Paivays": { "date": {} }
-  };
-  await notionFetch('/databases/' + db, 'PATCH', { properties: props });
-}
-
-async function tallennaNotioon(arvio) {
+async function tallennaSupabaseen(arvio) {
   const { db } = getConfig();
   const tänään = new Date().toISOString().split('T')[0];
   const body = {
@@ -460,12 +400,12 @@ async function tallennaNotioon(arvio) {
       "Paivays": { date: { start: tänään } }
     }
   };
-  return notionFetch('/pages', 'POST', body);
+  // removed - see tallennaSupabaseen
 }
 
-async function lataHistoriaNotion() {
+async function lataHistoriaSupabase() {
   const { db } = getConfig();
-  const data = await notionFetch('/databases/' + db + '/query', 'POST', { sorts: [{ property: 'Paivays', direction: 'descending' }], page_size: 100 });
+  const data = await supabaseRequest('hinnoittelu_historia?order=created_at.desc&limit=100');
   return (data.results || []).map(p => {
     const pp = p.properties;
     const getText = (prop) => prop?.rich_text?.[0]?.text?.content || '';
@@ -641,7 +581,7 @@ function laskeHinta() {
   document.getElementById('tulos').scrollIntoView({behavior:'smooth',block:'nearest'});
 
   const btn = document.getElementById('tallenna-btn');
-  btn.textContent = '💾 Tallenna Notioniin'; btn.disabled = false;
+  btn.textContent = '💾 Tallenna'; btn.disabled = false;
   document.getElementById('tallenna-status').textContent = '';
 
   viimeisinTulos = { kohteenNimi, alue, kohdetyypit: valitutKohdetyypit.join(', ') || '', koko, rakvuosi, kunto, sijainti, hinta: Math.round(perusHinta), alaraja: Math.round(alaraja), ylaraja: Math.round(ylaraja), nostaaTeksti, laskeeText };
@@ -654,16 +594,15 @@ async function tallennaArvio() {
   const status = document.getElementById('tallenna-status');
   btn.disabled = true; btn.textContent = '⏳ Tallennetaan…';
   try {
-    await varmistaTietokanta();
-    await tallennaNotioon(viimeisinTulos);
-    btn.textContent = '✓ Tallennettu Notioniin';
+    await tallennaSupabaseen(viimeisinTulos);
+    btn.textContent = '✓ Tallennettu';
     status.textContent = 'Näkyy historiassa heti.';
     status.style.color = '#2e7d32';
     document.getElementById('historia-badge').textContent = '';
   } catch(e) {
     btn.disabled = false;
     btn.textContent = '⚠️ Virhe — yritä uudelleen';
-    status.textContent = 'Tarkista Asetukset-välilehdeltä Notion-yhteys.';
+    status.textContent = 'Tallennus epäonnistui.';
     status.style.color = '#c62828';
     console.error(e);
   }
@@ -673,17 +612,17 @@ async function tallennaArvio() {
 async function lataHistoria() {
   const bar = document.getElementById('notion-status-bar');
   bar.className = 'notion-status loading';
-  bar.innerHTML = '<span class="spinner"></span> Ladataan historiaa Notionista…';
+  bar.innerHTML = '<span class="spinner"></span> Ladataan historiaa…';
   document.getElementById('historia-lista').innerHTML = '<div class="historia-empty">Ladataan…</div>';
   try {
-    kaikki_arviot = await lataHistoriaNotion();
+    kaikki_arviot = await lataHistoriaSupabase();
     bar.className = 'notion-status ok';
-    bar.innerHTML = `✓ Notion-yhteys toimii · ${kaikki_arviot.length} arvioita tallennettu`;
+    bar.innerHTML = `✓ Yhteys toimii · ${kaikki_arviot.length} arvioita tallennettu`;
     document.getElementById('historia-badge').textContent = kaikki_arviot.length > 0 ? `(${kaikki_arviot.length})` : '';
     suodataHistoria();
   } catch(e) {
     bar.className = 'notion-status err';
-    bar.innerHTML = '⚠️ Notion-yhteyttä ei saada — tarkista Asetukset-välilehti';
+    bar.innerHTML = '⚠️ Yhteyttä ei saada — yritä uudelleen';
     document.getElementById('historia-lista').innerHTML = '<div class="historia-empty">Yhteys epäonnistui.</div>';
     console.error(e);
   }
@@ -715,7 +654,7 @@ function suodataHistoria() {
         </div>` : ''}
       </div>
       <div class="h-actions">
-        <a href="https://www.notion.so/${a.id.replace(/-/g,'')}" target="_blank" class="btn-sm btn-outline" style="text-decoration:none;display:inline-block">Notion →</a>
+        
       </div>
     </div>`).join('');
 }
@@ -723,15 +662,11 @@ function suodataHistoria() {
 // ─── ASETUKSET ────────────────────────────────────────────────────────────────
 function lataaAsetukset() {
   const { key, db } = getConfig();
-  document.getElementById('notion-key').value = key;
-  document.getElementById('notion-db').value = db;
+  // Settings not needed for Supabase
 }
 
 function tallennaAsetukset() {
-  const key = document.getElementById('notion-key').value.trim();
-  const db = document.getElementById('notion-db').value.trim();
-  if (key) localStorage.setItem('notion_key', key);
-  if (db) localStorage.setItem('notion_db', db);
+  // Settings saved automatically
   document.getElementById('asetukset-status').textContent = '✓ Asetukset tallennettu';
   document.getElementById('asetukset-status').style.color = '#2e7d32';
 }
@@ -740,8 +675,8 @@ async function testaaYhteys() {
   const status = document.getElementById('asetukset-status');
   status.textContent = 'Testataan…'; status.style.color = '#888';
   try {
-    await lataHistoriaNotion();
-    status.textContent = '✓ Yhteys toimii — Notion vastaa oikein';
+    await lataHistoriaSupabase();
+    status.textContent = '✓ Yhteys toimii';
     status.style.color = '#2e7d32';
   } catch(e) {
     status.textContent = '⚠️ Yhteys epäonnistui: ' + e.message;
